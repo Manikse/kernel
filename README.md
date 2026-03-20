@@ -1,4 +1,4 @@
-# 🧠 Manikse Kernel (MK-1)
+#  Manikse Kernel (MK-1)
 > *A Cognitive Operating System Layer for Autonomous Agents.*
 
 <p align="center">
@@ -9,7 +9,7 @@
 
 ---
 
-## ⚡ Vision
+##  Vision
 
 Chatbots are obsolete.
 
@@ -29,7 +29,7 @@ It is the beginning of an **AI-native operating system**.
 
 MK-1 is built on three core pillars + an extensible driver system:
 
-### 🧠 ACL — Agent Control Layer
+###  ACL — Agent Control Layer
 The reasoning engine.  
 Model-agnostic and powered via OpenRouter (Gemini 2.0 Flash by default).
 
