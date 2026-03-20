@@ -144,7 +144,3 @@ Building the OS layer for the next generation of AI
 
 ☕ Support the Project
 <div align="center"> <a href="https://ko-fi.com/manikse"> <img src="https://storage.ko-fi.com/cdn/kofi3.png?v=3" width="200"/> </a> </div> ```
-🔧 І ще файл requirements.txt
-openai
-python-dotenv
-ddgs
