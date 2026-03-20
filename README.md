@@ -88,6 +88,7 @@ The interface to reality.
 git clone https://github.com/YOUR_USERNAME/manikse-kernel.git
 cd manikse-kernel
 pip install -r requirements.txt
+```
 🔑 Environment Setup
 
 Create a .env file in the root:
