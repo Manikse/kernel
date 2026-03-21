@@ -1,10 +1,18 @@
-import asyncio
 import os
+import sys
+
+# --- БЕЗПЕЧНИЙ ФІКС КОДУВАННЯ (Без бага подвійного Enter-у) ---
+os.environ["PYTHONIOENCODING"] = "utf-8"
+os.environ["PYTHONUTF8"] = "1"
+
+import asyncio
+from rich.console import Console
+from rich.panel import Panel
 from abc import ABC, abstractmethod
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
+
 from drivers.terminal import TerminalDriver
-# Імпортуємо тільки те, що реально лежить в інших файлах
 from drivers.web_search import WebSearchDriver
 from kernel.unms.memory import UNMSController
 from kernel.runtime.loop import KernelRuntime
@@ -26,7 +34,6 @@ class RealAIProvider(LLMProvider):
         self.model = model
 
     async def generate(self, prompt: str, system_prompt: str = "") -> str:
-        # Наш маніфест ідентичності
         KERNEL_MANIFESTO = """
         You are the Kernel (MK-1). 
         You are created by Manikse.
@@ -37,7 +44,8 @@ class RealAIProvider(LLMProvider):
         - UNMS (Unified Neural Memory System)
         - A2A (Agent-to-Agent Protocol)
         Your purpose is to manage autonomous agents and interact with the physical world via Drivers.
-        Respond in a professional, efficient, and visionary tone.
+        Respond in a professional, efficient, and visionary tone
+        Always respond in the same language as the Founder. Maintain a visionary but adaptive tone. If the Founder speaks Ukrainian, respond in Ukrainian. If Slovak — in Slovak.
         
         IMPORTANT: You have access to Tools. Use them if needed.
         1. To search the internet, output EXACTLY: [SEARCH: your query]
@@ -57,7 +65,6 @@ class RealAIProvider(LLMProvider):
         except Exception as e:
             return f"Kernel Error: {str(e)}"
 
-# ОСЬ КЛАС, ЯКОГО НЕ ВИСТАЧАЛО
 class ACLController:
     def __init__(self):
         self.providers = {}
@@ -75,44 +82,104 @@ class ACLController:
 # --- MAIN EXECUTION ---
 
 async def main():
-    # 1. Завантажуємо змінні середовища з файлу .env
-    load_dotenv()
+    console = Console()
     
-    # 2. Безпечно дістаємо ключ
+    # 1. МАГІЧНА ПАУЗА: Чекаємо 1.5 секунди, поки термінал VS Code 
+    # вставить усі свої команди активації середовища.
+    await asyncio.sleep(1.5)
+    
+    load_dotenv()
     API_KEY = os.getenv("OPENROUTER_API_KEY")
     
-    # Захист від запуску без ключа
-    if not API_KEY:
-        print("\n[CRITICAL ERROR] OPENROUTER_API_KEY не знайдено!")
-        print("Будь ласка, створи файл .env у корені проекту та додай рядок:")
-        print("OPENROUTER_API_KEY=\"твій_секретний_ключ\"")
-        return
-
-    acl = ACLController()
-    acl.register_provider("real_ai", RealAIProvider(api_key=API_KEY))
-    
-    memory = UNMSController()
-    file_system = FileDriver(base_path="./kernel_workspace")
-    web_search = WebSearchDriver() 
-    terminal = TerminalDriver(working_dir="./kernel_workspace") # НОВИЙ ДРАЙВЕР
-
-    # Передаємо драйвери в Ядро
-    kernel = KernelRuntime(acl, memory, drivers={"web_search": web_search, "terminal": terminal})
-
-    print("\n--- [Manikse Kernel (MK-1) IS ONLINE] ---")
-    print("Type 'exit' to suspend the Kernel.\n")
-    
-    # Нескінченний цикл для реального спілкування
-    while True:
-        user_input = input("[Founder]: ")
-        
-        if user_input.lower() in ["exit", "quit", "вихід"]:
-            print("[Kernel]: Suspending all processes. Goodbye.")
-            break
+    # SYSTEM INITIALIZATION STATUS
+    with console.status("[bold blue]Initializing MK-1 Core Systems...", spinner="dots"):
+        acl = ACLController()
+        if API_KEY:
+            acl.register_provider("real_ai", RealAIProvider(api_key=API_KEY))
+            status_acl = "[bold green]ONLINE (OpenRouter)[/]"
+        else:
+            status_acl = "[bold red]OFFLINE (Missing API Key)[/]"
             
-        # Обробка запиту через ядро
-        response = await kernel.step(user_input)
-        print(f"\n[Kernel]: {response}\n")
+        memory = UNMSController()
+        file_system = FileDriver(base_path="./kernel_workspace")
+        web_search = WebSearchDriver()
+        terminal = TerminalDriver(working_dir="./kernel_workspace")
+        
+        kernel = KernelRuntime(acl, memory, drivers={"web_search": web_search, "terminal": terminal})
+        await asyncio.sleep(0.5)
+
+    # Чистимо буфер вводу, щоб там не залишилося сміття від VS Code
+    if sys.platform == "win32":
+        import msvcrt
+        while msvcrt.kbhit():
+            msvcrt.getch()
+
+    # ПАНЕЛЬ СТАТУСУ
+    status_table = (
+        f"● [bold white]ACL Layer:[/] {status_acl}\n"
+        f"● [bold white]UNMS Memory:[/] [bold green]READY[/]\n"
+        f"● [bold white]Drivers active:[/] [bold cyan]Terminal, WebSearch, FileSystem[/]"
+    )
+    
+    logo = r"""
+    [bold cyan]
+     __  __ _  __     _ 
+    |  \/  | |/ /    / |
+    | |\/| | ' /_____| |
+    | |  | | . \_____| |
+    |_|  |_|_|\_\    |_|
+    
+    [white]MANIKSE COGNITIVE OS LAYER // ALPHA v0.1.0[/white]
+    [/bold cyan]
+    """
+    console.print(logo)
+    console.print(Panel(status_table, title="[bold white]System Status[/]", border_style="dim", expand=False))
+    console.print("[dim]Type 'exit' to suspend the Kernel.[/dim]\n")
+    
+    ghost_eof_caught = False
+    # Час, до якого ми ігноруємо будь-який ввід (зараз + 2 секунди після старту)
+    start_time = asyncio.get_event_loop().time()
+
+    while True:
+        try:
+            user_input = input("\033[1;32m> [Founder]: \033[0m")
+            ghost_eof_caught = True
+            
+            # ХАК: Якщо ввід прилетів занадто швидко (менше 2 сек від старту) 
+            # або містить шлях до скриптів активації - просто ігноруємо це сміття.
+            current_time = asyncio.get_event_loop().time()
+            if (current_time - start_time < 2.0) or ("Activate.ps1" in user_input):
+                continue
+
+            if not user_input.strip():
+                continue
+                
+            if user_input.lower() in ["exit", "quit", "вихід"]:
+                console.print("\n[bold red]Suspending all Kernel processes. Goodbye.[/]")
+                break
+                
+            with console.status("[bold cyan]MK-1 is processing...", spinner="bouncingBar"):
+                response = await kernel.step(user_input)
+                
+            console.print("\n")
+            console.print(Panel(
+                response, 
+                title="[bold bright_blue]Kernel (MK-1)[/]", 
+                border_style="bright_blue",
+                padding=(1, 2)
+            ))
+            console.print("\n")
+            
+        except EOFError:
+            if not ghost_eof_caught:
+                ghost_eof_caught = True
+                continue
+            break
+        except KeyboardInterrupt:
+            break
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
