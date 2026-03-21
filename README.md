@@ -1,4 +1,4 @@
-# 🧠 Manikse Kernel (MK-1)
+#  Manikse Kernel (MK-1)
 > *A Cognitive Operating System Layer for Autonomous Agents.*
 
 <p align="center">
@@ -9,7 +9,7 @@
 
 ---
 
-## ⚡ Vision
+##  Vision
 
 Chatbots are obsolete.
 
@@ -25,59 +25,37 @@ It is the beginning of an **AI-native operating system**.
 
 ---
 
-## 🏗 Architecture
+## 🏗 Core Architecture
+MK-1 is built on three pillars of machine autonomy:
 
-MK-1 is built on three core pillars + an extensible driver system:
+### 1. ACL (Agent Control Layer)
+The "Prefrontal Cortex" of the system. It handles high-level reasoning, manages multiple LLM providers (OpenRouter, Gemini, OpenAI), and routes logic based on mission requirements.
 
-### 🧠 ACL — Agent Control Layer
-The reasoning engine.  
-Model-agnostic and powered via OpenRouter (Gemini 2.0 Flash by default).
-
-Handles:
-- decision-making
-- ReAct-style tool usage
-- execution planning
-
----
-
-### 🧬 UNMS — Unified Neural Memory System
-The memory core.
-
-- Automatic context compression
-- Warm storage for long-term coherence
-- Prevents token overflow
+### 2. UNMS (Unified Neural Memory System)
+The "Hippocampus." It provides persistent, long-term memory. MK-1 remembers past interactions, learned facts, and project contexts across sessions using a unified storage layer.
+### 3. Drivers (A2E - Agent-to-Environment)
+The "Hands" of the system. Drivers allow the Kernel to interact with the world:
+* **WebSearch Driver:** Real-time internet access and data retrieval.
+* **Terminal Driver:** Execution of native PC commands (PowerShell/CMD) with self-correction.
+* **FileSystem Driver:** Autonomous file management and code generation.
 
 ---
 
-### 🤝 A2A — Agent-to-Agent Protocol *(WIP)*
-The foundation for swarm intelligence.
+##  Features
 
----
-
-### 🛠 Driver Abstraction
-The interface to reality.
-
-- Sandboxed tools
-- Extendable
-- Enables real-world interaction
-
----
-
-## 🚀 Features
-
-- ⚡ **Self-Correcting Execution**  
+-  **Self-Correcting Execution**  
   Detects terminal errors and fixes commands automatically
 
-- 🌐 **Dynamic Web Search (`[SEARCH:]`)**  
+-  **Dynamic Web Search (`[SEARCH:]`)**  
   Real-time data via `ddgs`
 
-- 💻 **Terminal Execution (`[EXECUTE:]`)**  
+-  **Terminal Execution (`[EXECUTE:]`)**  
   File system + shell control in `kernel_workspace`
 
-- 🔌 **LLM Agnostic**  
+-  **LLM Agnostic**  
   Easily switch models via OpenRouter
 
-- 🌍 **Bilingual Context Awareness**  
+-  **Bilingual Context Awareness**  
   Seamless language switching
 
 ---
@@ -85,7 +63,7 @@ The interface to reality.
 ## 🛠 Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/manikse-kernel.git
+git clone [https://github.com/Manikse/kernel-core]
 cd manikse-kernel
 pip install -r requirements.txt
 ```
@@ -94,9 +72,11 @@ pip install -r requirements.txt
 Create a .env file in the root:
 
 OPENROUTER_API_KEY="sk-or-v1-your-key-here"
-▶️ Run the Kernel
+
+**Run the Kernel**
 python main.py
-💻 Example Interaction
+
+# Example Interaction
 User:
 Create a file hello.txt in your workspace and write "MK-1 is alive" in it.
 
@@ -114,21 +94,12 @@ Kernel:
 [Driver: Terminal] Executing: dir hello.txt /s
 
 ✔ Absolute path returned
-🗺 Roadmap
+🛠 Roadmap
+[x] Phase 1: Terminal Alpha - Core logic, CLI Cyberpunk interface, Basic Drivers.
 
- Core reasoning loop (ACL)
+[ ] Phase 2: Web Interface - Localhost UI for seamless interaction and visualization.
 
- Memory system (UNMS)
-
- Web search driver
-
- Terminal execution driver
-
- Vector DB integration (ChromaDB)
-
- Multi-agent system (A2A)
-
- Advanced file system + AST parsing
+[ ] Phase 3: Swarm Protocol - Allowing multiple MK-1 instances to collaborate on a single task.
 
 ⚠️ Disclaimer
 
@@ -139,12 +110,7 @@ While sandboxed to ./kernel_workspace, review the code before use in production.
 
 👤 Author
 
-Manikse
-Building the OS layer for the next generation of AI
+Created by **Manikse** — Building the infrastructure of the future.
 
 ☕ Support the Project
 <div align="center"> <a href="https://ko-fi.com/manikse"> <img src="https://storage.ko-fi.com/cdn/kofi3.png?v=3" width="200"/> </a> </div> ```
-🔧 І ще файл requirements.txt
-openai
-python-dotenv
-ddgs
