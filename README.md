@@ -2,7 +2,7 @@
 > *A Cognitive Operating System Layer for Autonomous Agents.*
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-v0.1.0--alpha-blue">
+  <img src="https://img.shields.io/badge/version-v0.1.4--alpha-blue">
   <img src="https://img.shields.io/badge/status-experimental-orange">
   <img src="https://img.shields.io/badge/license-MIT-green">
 </p>
