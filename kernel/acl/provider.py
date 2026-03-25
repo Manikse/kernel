@@ -43,11 +43,12 @@ class ACLController:
     def register_provider(self, name: str, provider: LLMProvider):
         self.providers[name] = provider
 
-    async def execute(self, prompt: str, provider_name: str = None) -> str:
+    async def execute(self, prompt: str, provider_name: str = None, system_prompt: str = "") -> str:
         target = provider_name or self.default_provider
         if target not in self.providers:
             return "Error: No provider registered."
-        return await self.providers[target].generate(prompt)
+        # Тепер ми передаємо system_prompt далі в генератор
+        return await self.providers[target].generate(prompt, system_prompt=system_prompt)
 
 # --- MAIN EXECUTION ---
 

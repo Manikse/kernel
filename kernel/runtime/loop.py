@@ -1,56 +1,72 @@
 import re
 from kernel.acl.provider import ACLController
 from kernel.unms.memory import UNMSController
+from kernel.runtime.planner import CognitivePlanner
 
 class KernelRuntime:
-    """
-    The main execution loop of the Kernel. 
-    Intercepts tools: WebSearch and Terminal.
-    """
-    def __init__(self, acl: ACLController, memory: UNMSController, drivers: dict = None):
+    def __init__(self, acl, memory, drivers: dict):
         self.acl = acl
         self.memory = memory
-        self.drivers = drivers or {}
-        self.is_active = True
+        self.drivers = drivers
+        # Підключаємо наш новий мозок
+        self.planner = CognitivePlanner(acl)
 
     async def step(self, user_input: str) -> str:
-        # 1. Orient
-        self.memory.commit(user_input, role="user")
-        full_prompt = f"Context:\n{self.memory.get_context()}\n\nAssistant:"
-
-        # 2. Decide
-        response = await self.acl.execute(full_prompt)
-
-        # 3. Act - Шукаємо команди
-        search_match = re.search(r"\[SEARCH:\s*(.*?)\]", response)
-        exec_match = re.search(r"\[EXECUTE:\s*(.*?)\]", response)
+        # ЕТАП 1: ПЛАНУВАННЯ
+        # Ядро більше не відповідає одразу. Воно створює масив задач.
+        tasks = await self.planner.create_plan(user_input)
         
-        # Обробка SEARCH
-        if search_match and "web_search" in self.drivers:
-            query = search_match.group(1)
-            results = self.drivers["web_search"].search(query)
-            self.memory.commit(response, role="assistant")
-            sys_msg = f"[SYSTEM: Search Results for '{query}']\n{results}\nAnalyze this and answer the user. DO NOT output another tool command."
-            self.memory.commit(sys_msg, role="system")
-            
-            print("[Kernel] Аналізую дані з інтернету...")
-            final_resp = await self.acl.execute(f"Context:\n{self.memory.get_context()}\n\nAssistant:")
-            self.memory.commit(final_resp, role="assistant")
-            return final_resp
+        if not tasks:
+            return "Kernel Error: Cognitive Planner failed to generate an execution sequence."
 
-        # Обробка EXECUTE
-        elif exec_match and "terminal" in self.drivers:
-            command = exec_match.group(1)
-            results = self.drivers["terminal"].execute(command)
-            self.memory.commit(response, role="assistant")
-            sys_msg = f"[SYSTEM: Execution Output for '{command}']\n{results}\nTell the user the result. DO NOT output another tool command."
-            self.memory.commit(sys_msg, role="system")
+        results_summary = []
+        
+        # ЕТАП 2: ВИКОНАННЯ (Execution Engine)
+        for task in tasks:
+            print(f"\n[MK-1 EXEC] Step {task.step_id}: {task.description} [Tool: {task.tool}]")
             
-            print("[Kernel] Аналізую результати виконання терміналу...")
-            final_resp = await self.acl.execute(f"Context:\n{self.memory.get_context()}\n\nAssistant:")
-            self.memory.commit(final_resp, role="assistant")
-            return final_resp
+            try:
+                # Маршрутизація задач до відповідних драйверів
+                if task.tool == "web_search" and "web_search" in self.drivers:
+                    # Припускаємо, що у WebSearchDriver є метод пошуку
+                    # Якщо він називається інакше, заміни .execute на правильну назву
+                    task.result = await self.drivers["web_search"].execute(task.description) 
+                
+                elif task.tool == "terminal" and "terminal" in self.drivers:
+                    task.result = self.drivers["terminal"].execute(task.description)
+                
+                elif task.tool == "file_system" and "file_system" in self.drivers:
+                    # Поки що перенаправляємо файлові операції на базовий LLM, 
+                    # якщо драйвер ще не має складних методів
+                    task.result = await self.acl.execute(f"File System Action needed: {task.description}")
+                
+                else:
+                    # Fallback: якщо це просто логіка, код або текст - віддаємо головному ШІ
+                    task.result = await self.acl.execute(task.description)
+                    
+                task.status = "COMPLETED"
+                
+            except Exception as e:
+                task.result = f"CRITICAL FAILURE: {str(e)}"
+                task.status = "FAILED"
+                
+            # Збираємо логи виконання в один масив
+            results_summary.append(f"Step {task.step_id} ({task.tool}) | Status: {task.status}\nData/Output: {task.result}")
 
-        # Якщо команд немає - просто відповідаємо
-        self.memory.commit(response, role="assistant")
-        return response
+        # ЕТАП 3: СИНТЕЗ
+        # Згодовуємо всі сирі дані від драйверів назад у ШІ, щоб він зробив гарний звіт для тебе
+        compiled_results = "\n---\n".join(results_summary)
+        
+        final_prompt = f"""
+        The Founder requested: "{user_input}"
+        
+        The system executed the following autonomous plan and gathered this raw data:
+        {compiled_results}
+        
+        Based on these raw execution logs, provide a clear, professional, and visionary final response to the Founder. 
+        If the tools failed, explain why. If they succeeded, present the final output beautifully. 
+        Do not list the steps mechanically unless it adds value.
+        """
+        
+        final_response = await self.acl.execute(final_prompt)
+        return final_response
