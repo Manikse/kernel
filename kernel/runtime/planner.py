@@ -23,19 +23,24 @@ class CognitivePlanner:
         
         AVAILABLE TOOLS:
         - terminal: Execute raw OS commands (PowerShell/CMD).
-        - file_system: Read, write, or modify files.
-        - llm: General reasoning or text generation.
+        - file_system: Read or write files (WRITE filename.ext\n[content]).
+        - web_search: Search the internet.
+        - spawn_agent: Create a specialized sub-agent to do complex thinking, writing, or coding.
+        - llm: General reasoning.
 
         CRITICAL RULES:
         1. Return ONLY a valid JSON array. No markdown, no explanations.
-        2. Use the exact keys: "step_id", "tool", "command".
-        3. If tool is "terminal", the "command" field MUST contain ONLY the RAW COMMAND to execute. DO NOT write human explanations!
+        2. Use exact keys: "step_id", "tool", "command".
+        3. If tool is "spawn_agent", the "command" MUST strictly follow this format:
+           AgentName | AgentRole | Task to perform
+        4. If tool is "file_system", "command" MUST follow format: "WRITE filename.ext\n[content]" or "READ filename.ext".
+        5. If tool is "web_search", "command" MUST be the exact search query (e.g., "latest AI news 2026"). DO NOT write explanations.
+        6. PROBLEM SOLVING: If you need real-time data (like current weather or stock prices) and standard web_search might not give an exact number in the snippet, write a quick Python script using 'terminal' tool (e.g., using curl, requests, or public APIs like 'curl wttr.in/Bratislava?format=3') to get the data directly.
 
         CORRECT FORMAT EXAMPLE:
         [
-            {"step_id": 1, "tool": "terminal", "command": "echo print(100 * 5) > founder_test.py"},
-            {"step_id": 2, "tool": "terminal", "command": "echo print('MK-1 Terminal is online') >> founder_test.py"},
-            {"step_id": 3, "tool": "terminal", "command": "python founder_test.py"}
+            {"step_id": 1, "tool": "web_search", "command": "Python 3.13 release notes"},
+            {"step_id": 2, "tool": "file_system", "command": "WRITE notes.txt\n[summarized data]"}
         ]
         """
         

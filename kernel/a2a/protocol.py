@@ -1,38 +1,26 @@
-import uuid
-import time
-from typing import Dict, Any, Optional
+import asyncio
 
-class AgentRequest:
+class A2AController:
     """
-    Standardized request format for A2A communication.
+    Протокол Agent-to-Agent. 
+    Дозволяє Ядру (MK-1) створювати спеціалізованих підлеглих агентів для виконання задач.
     """
-    def __init__(self, sender_id: str, receiver_id: str, action: str, params: Dict[str, Any]):
-        self.request_id = str(uuid.uuid4())
-        self.sender_id = sender_id
-        self.receiver_id = receiver_id
-        self.action = action  # e.g., 'RESEARCH', 'CODE_REFACTOR', 'SEARCH_WEB'
-        self.params = params
-        self.timestamp = time.time()
+    def __init__(self, acl):
+        self.acl = acl
 
-class AgentResponse:
-    """
-    Standardized response format.
-    """
-    def __init__(self, request_id: str, status: str, data: Any):
-        self.request_id = request_id
-        self.status = status  # 'SUCCESS', 'FAILED', 'PENDING'
-        self.data = data
-        self.timestamp = time.time()
-
-class A2AMessenger:
-    """
-    The Post Office of the Kernel. 
-    Routes messages between different AI agents.
-    """
-    def __init__(self):
-        self.message_history: List[AgentRequest] = []
-
-    def dispatch(self, request: AgentRequest) -> str:
-        print(f"[Kernel A2A] Routing action '{request.action}' from {request.sender_id} to {request.receiver_id}")
-        self.message_history.append(request)
-        return f"Message {request.request_id} delivered."
+    async def delegate(self, agent_name: str, role: str, task: str) -> str:
+        print(f"\n[A2A Protocol] 🤖 Spawning Sub-Agent '{agent_name}'...")
+        print(f"[A2A Protocol] 🎯 Role: {role}")
+        
+        system_prompt = f"""
+        You are an autonomous sub-agent operating under the MK-1 Kernel.
+        Your Name: {agent_name}
+        Your Role: {role}
+        
+        Your objective is to complete the task assigned by the Kernel. 
+        Focus ONLY on your specific role. Return the final, high-quality result.
+        """
+        
+        result = await self.acl.execute(task, system_prompt=system_prompt)
+        
+        return f"SUCCESS: Sub-Agent '{agent_name}' completed the task.\nResult:\n{result}"

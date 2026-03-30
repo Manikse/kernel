@@ -1,21 +1,33 @@
+import asyncio
 from duckduckgo_search import DDGS
 from ddgs import DDGS
 
 class WebSearchDriver:
+    """
+    Драйвер веб-пошуку. Дає Ядру можливість гуглити актуальну інформацію.
+    """
     def __init__(self):
         self.name = "WebSearch"
 
-    def search(self, query: str, max_results: int = 3) -> str:
-        print(f"\n[Driver: WebSearch] 🌐 Здійснюю пошук: '{query}'...")
+    async def execute(self, query: str) -> str:
+        print(f"\n[Driver: {self.name}] 🌐 Searching the web for: '{query}'...")
+        
         try:
-            # Використовуємо нову бібліотеку
-            results = DDGS().text(query, max_results=max_results)
-            # Якщо результатів немає або це не список
-            if not results:
-                return "No results found."
+            def perform_search():
+                # Використовуємо нову бібліотеку ddgs
+                return DDGS().text(query, max_results=3)
             
-            # Форматуємо результати для LLM
-            formatted = "\n".join([f"- {res.get('title', 'No title')}: {res.get('body', 'No body')} ({res.get('href', 'No link')})" for res in results])
-            return formatted
+            results = await asyncio.to_thread(perform_search)
+            
+            if not results:
+                return f"SYSTEM REPORT: The web search returned exactly 0 results for '{query}'. Do not hallucinate. Tell the user you couldn't find the data."
+            
+            formatted_results = []
+            for i, r in enumerate(results, 1):
+                formatted_results.append(f"Result {i}:\nTitle: {r.get('title')}\nSnippet: {r.get('body')}\nLink: {r.get('href')}")
+                
+            final_output = "\n\n".join(formatted_results)
+            return f"SUCCESS: Found the following information:\n{final_output}"
+            
         except Exception as e:
-            return f"Search Error: {str(e)}"
+            return f"SYSTEM REPORT: Web search FAILED with error: {str(e)}. Tell the user the search tool is broken."

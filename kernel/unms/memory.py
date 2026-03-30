@@ -11,37 +11,29 @@ class MemoryEntry:
 
 class UNMSController:
     """
-    The brain's storage. Manages where data goes based on its 'age' and 'relevance'.
+    Unified Neural Memory System (UNMS).
+    Зараз працює як Short-Term Memory (Контекстне вікно розмови).
     """
-    def __init__(self):
-        # Hot Layer: Current conversation (RAM)
-        self.working_memory: List[MemoryEntry] = []
-        
-        # Warm Layer: Recent history (to be moved to Vector DB later)
-        self.episodic_buffer: List[MemoryEntry] = []
-        
-        # Cold Layer: Permanent facts (Knowledge Graph/Vector DB)
-        self.semantic_core: Dict[str, str] = {}
+    def __init__(self, max_history=10):
+        # Зберігаємо останні 10 повідомлень (щоб не перевантажити контекст)
+        self.history = []
+        self.max_history = max_history
 
-    def commit(self, content: str, role: str):
-        """Adds new information to the Working Memory."""
-        entry = MemoryEntry(content, role)
-        self.working_memory.append(entry)
+    def add_interaction(self, user_query: str, kernel_response: str):
+        self.history.append({"role": "user", "content": user_query})
+        self.history.append({"role": "assistant", "content": kernel_response})
         
-        # If Working Memory is too large, trigger consolidation
-        if len(self.working_memory) > 10:
-            self._consolidate()
+        # Якщо історія занадто довга, видаляємо найстаріші повідомлення
+        if len(self.history) > self.max_history * 2:
+            self.history = self.history[-(self.max_history * 2):]
 
-    def _consolidate(self):
-        """
-        The 'Sleep Cycle' logic. 
-        Moves old working memory to the episodic buffer.
-        """
-        print("[Kernel] Consolidation triggered: Moving data to Warm Storage...")
-        to_move = self.working_memory[:5]
-        self.episodic_buffer.extend(to_move)
-        self.working_memory = self.working_memory[5:]
-
-    def get_context(self) -> str:
-        """Returns the current relevant context for the LLM."""
-        return "\n".join([f"{e.role}: {e.content}" for e in self.working_memory])
+    def get_context_string(self) -> str:
+        if not self.history:
+            return "No previous conversation history."
+        
+        context_lines = []
+        for msg in self.history:
+            speaker = "Founder" if msg["role"] == "user" else "MK-1"
+            context_lines.append(f"{speaker}: {msg['content']}")
+            
+        return "\n".join(context_lines)

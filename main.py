@@ -14,9 +14,10 @@ from dotenv import load_dotenv
 
 from drivers.terminal import TerminalDriver
 from drivers.web_search import WebSearchDriver
+from drivers.file_system import FileSystemDriver
 from kernel.unms.memory import UNMSController
 from kernel.runtime.loop import KernelRuntime
-from drivers.file_system import FileDriver
+
 
 # --- ACL SECTION ---
 
@@ -46,11 +47,6 @@ class RealAIProvider(LLMProvider):
         Your purpose is to manage autonomous agents and interact with the physical world via Drivers.
         Respond in a professional, efficient, and visionary tone
         Always respond in the same language as the Founder. Maintain a visionary but adaptive tone. If the Founder speaks Ukrainian, respond in Ukrainian. If Slovak — in Slovak.
-        
-        IMPORTANT: You have access to Tools. Use them if needed.
-        1. To search the internet, output EXACTLY: [SEARCH: your query]
-        2. To run terminal commands/scripts (Powershell/CMD), output EXACTLY: [EXECUTE: your command]
-        The system will intercept these, run them, and give you the output.
         """
         
         try:
@@ -73,14 +69,13 @@ class ACLController:
     def register_provider(self, name: str, provider: LLMProvider):
         self.providers[name] = provider
 
-    # --- ОСЬ ТУТ МАГІЯ: ми додали system_prompt ---
     async def execute(self, prompt: str, provider_name: str = None, system_prompt: str = "") -> str:
         target = provider_name or self.default_provider
         if target not in self.providers:
             return "Error: No provider registered."
         
-        # Передаємо system_prompt далі у саму модель
         return await self.providers[target].generate(prompt, system_prompt=system_prompt)
+
 # --- MAIN EXECUTION ---
 
 async def main():
@@ -103,11 +98,18 @@ async def main():
             status_acl = "[bold red]OFFLINE (Missing API Key)[/]"
             
         memory = UNMSController()
-        file_system = FileDriver(base_path="./kernel_workspace")
+        
+        # --- ІНІЦІАЛІЗАЦІЯ ДРАЙВЕРІВ ---
+        file_system = FileSystemDriver(working_dir="./kernel_workspace")
         web_search = WebSearchDriver()
         terminal = TerminalDriver(working_dir="./kernel_workspace")
         
-        kernel = KernelRuntime(acl, memory, drivers={"web_search": web_search, "terminal": terminal})
+        # --- ПІДКЛЮЧЕННЯ ДРАЙВЕРІВ ДО ЯДРА ---
+        kernel = KernelRuntime(acl, memory, drivers={
+            "web_search": web_search, 
+            "terminal": terminal,
+            "file_system": file_system  # ТЕПЕР ФАЙЛОВА СИСТЕМА ПІДКЛЮЧЕНА
+        })
         await asyncio.sleep(0.5)
 
     # Чистимо буфер вводу, щоб там не залишилося сміття від VS Code
@@ -131,7 +133,7 @@ async def main():
     | |  | | . \_____| |
     |_|  |_|_|\_\    |_|
     
-    [white]MANIKSE COGNITIVE OS LAYER // ALPHA v0.1.0[/white]
+    [white]MANIKSE COGNITIVE OS LAYER // ALPHA v0.2.0[/white]
     [/bold cyan]
     """
     console.print(logo)
@@ -139,7 +141,6 @@ async def main():
     console.print("[dim]Type 'exit' to suspend the Kernel.[/dim]\n")
     
     ghost_eof_caught = False
-    # Час, до якого ми ігноруємо будь-який ввід (зараз + 2 секунди після старту)
     start_time = asyncio.get_event_loop().time()
 
     while True:
@@ -147,8 +148,6 @@ async def main():
             user_input = input("\033[1;32m> [Founder]: \033[0m")
             ghost_eof_caught = True
             
-            # ХАК: Якщо ввід прилетів занадто швидко (менше 2 сек від старту) 
-            # або містить шлях до скриптів активації - просто ігноруємо це сміття.
             current_time = asyncio.get_event_loop().time()
             if (current_time - start_time < 2.0) or ("Activate.ps1" in user_input):
                 continue
