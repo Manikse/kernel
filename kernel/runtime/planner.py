@@ -1,4 +1,5 @@
 import json
+import platform
 from typing import List
 
 class Task:
@@ -17,12 +18,23 @@ class CognitivePlanner:
         self.acl = acl
 
     async def create_plan(self, user_goal: str) -> List[Task]:
-        # ХАК: Змінено ключі в JSON, щоб ШІ писав КОД, а не текст
-        system_prompt = """
+        # --- АВТОВИЗНАЧЕННЯ СЕРЕДОВИЩА ---
+        os_name = platform.system()
+        if os_name == "Windows":
+            env_hint = "You are running on Windows. For the 'terminal' tool, strictly use PowerShell commands (e.g., Get-Date, Get-ChildItem)."
+        elif os_name == "Darwin":
+            env_hint = "You are running on macOS. For the 'terminal' tool, use standard bash/zsh commands."
+        else:
+            env_hint = f"You are running on {os_name} (Linux-based). For the 'terminal' tool, use standard bash commands (e.g., date, ls, pwd)."
+
+        # Використовуємо f-строку з подвійними дужками для екранування JSON-формату
+        system_prompt = f"""
         You are the MK-1 Cognitive Planner. Break down the user's goal into a logical sequence of actionable tasks.
         
+        ENVIRONMENT: {env_hint}
+        
         AVAILABLE TOOLS:
-        - terminal: Execute raw OS commands (PowerShell/CMD).
+        - terminal: Execute raw OS commands.
         - file_system: Read or write files (WRITE filename.ext\n[content]).
         - web_search: Search the internet.
         - spawn_agent: Create a specialized sub-agent to do complex thinking, writing, or coding.
@@ -34,13 +46,14 @@ class CognitivePlanner:
         3. If tool is "spawn_agent", the "command" MUST strictly follow this format:
            AgentName | AgentRole | Task to perform
         4. If tool is "file_system", "command" MUST follow format: "WRITE filename.ext\n[content]" or "READ filename.ext".
-        5. If tool is "web_search", "command" MUST be the exact search query (e.g., "latest AI news 2026"). DO NOT write explanations.
-        6. PROBLEM SOLVING: If you need real-time data (like current weather or stock prices) and standard web_search might not give an exact number in the snippet, write a quick Python script using 'terminal' tool (e.g., using curl, requests, or public APIs like 'curl wttr.in/Bratislava?format=3') to get the data directly.
+        5. If tool is "web_search", "command" MUST be the exact search query. DO NOT write explanations.
+        6. PROBLEM SOLVING: If you need real-time data, write a quick script using 'terminal' tool.
+        7. DATA PIPING (CRITICAL): If Step B needs the output of Step A, you MUST use the exact syntax {{{{STEP_A_RESULT}}}} inside Step B's command.
 
         CORRECT FORMAT EXAMPLE:
         [
-            {"step_id": 1, "tool": "web_search", "command": "Python 3.13 release notes"},
-            {"step_id": 2, "tool": "file_system", "command": "WRITE notes.txt\n[summarized data]"}
+            {{"step_id": 1, "tool": "spawn_agent", "command": "DevOps-Master | Senior Linux Admin | Write a script"}},
+            {{"step_id": 2, "tool": "file_system", "command": "WRITE script.sh\\n{{{{STEP_1_RESULT}}}}"}}
         ]
         """
         
@@ -52,7 +65,6 @@ class CognitivePlanner:
             plan_data = json.loads(cleaned_response)
             
             for item in plan_data:
-                # Беремо поле command (або description, якщо ШІ все ж помилиться)
                 action_text = item.get("command") or item.get("description", "")
                 tasks.append(Task(
                     step_id=item.get("step_id"),

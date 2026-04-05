@@ -1,9 +1,10 @@
 import asyncio
+import re
 
 class A2AController:
     """
-    Протокол Agent-to-Agent. 
-    Дозволяє Ядру (MK-1) створювати спеціалізованих підлеглих агентів для виконання задач.
+    Agent-to-Agent Protocol with built-in Middleware.
+    Allows the Kernel (MK-1) to spawn specialized sub-agents and ensures clean code output.
     """
     def __init__(self, acl):
         self.acl = acl
@@ -17,10 +18,27 @@ class A2AController:
         Your Name: {agent_name}
         Your Role: {role}
         
-        Your objective is to complete the task assigned by the Kernel. 
-        Focus ONLY on your specific role. Return the final, high-quality result.
+        CRITICAL RULES:
+        1. Complete the task assigned by the Kernel. Focus ONLY on your specific role.
+        2. IF YOUR TASK INVOLVES WRITING CODE OR A SCRIPT: You MUST wrap the entire code inside markdown code blocks.
+        3. Do NOT provide human explanations. Return ONLY the code inside the block.
         """
         
-        result = await self.acl.execute(task, system_prompt=system_prompt)
+        raw_result = await self.acl.execute(task, system_prompt=system_prompt)
         
-        return f"SUCCESS: Sub-Agent '{agent_name}' completed the task.\nResult:\n{result}"
+        # --- MIDDLEWARE: Clean Code Extraction ---
+        # Використовуємо chr(96) * 3, щоб інтерфейс чату не зламався при копіюванні
+        backticks = chr(96) * 3
+        pattern = f'{backticks}(?:[a-zA-Z0-9]+)?\n(.*?){backticks}'
+        
+        code_blocks = re.findall(pattern, raw_result, re.DOTALL)
+        
+        if code_blocks:
+            # If the Sub-Agent generated a code block, extract ONLY the code
+            final_output = code_blocks[0].strip()
+            print(f"[A2A Protocol] 🧹 Middleware successfully extracted clean code.")
+        else:
+            # Fallback for plain text tasks (e.g., summarizing, writing text)
+            final_output = raw_result.strip()
+            
+        return final_output
