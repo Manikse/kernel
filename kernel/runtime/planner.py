@@ -29,7 +29,7 @@ class CognitivePlanner:
 
         # Використовуємо f-строку з подвійними дужками для екранування JSON-формату
         system_prompt = f"""
-        You are the MK-1 Cognitive Planner. Break down the user's goal into a logical sequence of actionable tasks.
+        You are the ExArchon Cognitive Planner. Break down the user's goal into a logical sequence of actionable tasks.
         
         ENVIRONMENT: {env_hint}
         
@@ -72,7 +72,7 @@ class CognitivePlanner:
                     tool=item.get("tool", "llm")
                 ))
         except json.JSONDecodeError:
-            print(f"[MK-1 Planner Error] Failed to parse JSON. Fallback to LLM.")
+            print(f"[ExArchon Planner Error] Failed to parse JSON. Fallback to LLM.")
             tasks.append(Task(1, user_goal, "llm"))
             
         return tasks

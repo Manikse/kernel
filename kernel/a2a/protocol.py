@@ -4,7 +4,7 @@ import re
 class A2AController:
     """
     Agent-to-Agent Protocol with built-in Middleware.
-    Allows the Kernel (MK-1) to spawn specialized sub-agents and ensures clean code output.
+    Allows the Kernel (ExArchon) to spawn specialized sub-agents and ensures clean code output.
     """
     def __init__(self, acl):
         self.acl = acl
@@ -14,7 +14,7 @@ class A2AController:
         print(f"[A2A Protocol] 🎯 Role: {role}")
         
         system_prompt = f"""
-        You are an autonomous sub-agent operating under the MK-1 Kernel.
+        You are an autonomous sub-agent operating under the ExArchon Kernel.
         Your Name: {agent_name}
         Your Role: {role}
         

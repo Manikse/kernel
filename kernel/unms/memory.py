@@ -33,7 +33,7 @@ class UNMSController:
         
         context_lines = []
         for msg in self.history:
-            speaker = "Founder" if msg["role"] == "user" else "MK-1"
+            speaker = "Founder" if msg["role"] == "user" else "ExArchon"
             context_lines.append(f"{speaker}: {msg['content']}")
             
         return "\n".join(context_lines)

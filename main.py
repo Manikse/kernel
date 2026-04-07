@@ -36,7 +36,7 @@ class RealAIProvider(LLMProvider):
 
     async def generate(self, prompt: str, system_prompt: str = "") -> str:
         KERNEL_MANIFESTO = """
-        You are the Kernel (MK-1). 
+        You are the ExArchon. 
         You are created by Manikse.
         Manikse is a visionary founder building the future of AI.
         You are a Cognitive Operating System Layer.
@@ -80,7 +80,7 @@ class ACLController:
 # --- BACKGROUND DAEMON WORKER ---
 
 async def daemon_worker(kernel, console):
-    """Фонова служба MK-1. Працює непомітно для користувача."""
+    """Фонова служба ExArchon. Працює непомітно для користувача."""
     console.print("[dim italic] Daemon worker initialized and sleeping in background...[/dim italic]\n")
     
     while True:
@@ -127,13 +127,13 @@ async def interactive_repl(kernel, console, start_time):
                 console.print("\n[bold red]Suspending all Kernel processes. Goodbye.[/]")
                 os._exit(0) # Жорсткий вихід, щоб закрити і фонові потоки
                 
-            with console.status("[bold cyan]MK-1 is processing...", spinner="bouncingBar"):
+            with console.status("[bold cyan]ExArchon is processing...", spinner="bouncingBar"):
                 response = await kernel.step(user_input)
                 
             console.print("\n")
             console.print(Panel(
                 response, 
-                title="[bold bright_blue]Kernel (MK-1)[/]", 
+                title="[bold bright_blue]Kernel (ExArchon)[/]", 
                 border_style="bright_blue",
                 padding=(1, 2)
             ))
@@ -160,7 +160,7 @@ async def main():
     API_KEY = os.getenv("OPENROUTER_API_KEY")
     
     # SYSTEM INITIALIZATION STATUS
-    with console.status("[bold blue]Initializing MK-1 Core Systems...", spinner="dots"):
+    with console.status("[bold blue]Initializing ExArchon Core Systems...", spinner="dots"):
         acl = ACLController()
         if API_KEY:
             acl.register_provider("real_ai", RealAIProvider(api_key=API_KEY))
@@ -199,13 +199,13 @@ async def main():
     
     logo = r"""
     [bold cyan]
-     __  __ _  __     _ 
-    |  \/  | |/ /    / |
-    | |\/| | ' /_____| |
-    | |  | | . \_____| |
-    |_|  |_|_|\_\    |_|
-    
-    [white]MANIKSE COGNITIVE OS LAYER // ALPHA v0.3.0[/white]
+     _____  __   __   ___    ____    ____   _   _    ___    _   _ 
+    | ____| \ \ / /  / _ \  |  _ \  / ___| | | | |  / _ \  | \ | |
+    |  _|    \ V /  / /_\ \ | |_) | | |    | |_| | | | | | |  \| |
+    | |___    > <   |  _  | |  _ <  | |___ |  _  | | |_| | | |\  |
+    |_____|  /_/ \_\|_| |_| |_| \_\  \____||_| |_|  \___/  |_| \_|
+                                                                  
+    [white]EXARCHON COGNITIVE OS LAYER // ALPHA v0.4.0[/white]
     [/bold cyan]
     """
     console.print(logo)

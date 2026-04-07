@@ -30,7 +30,7 @@ HTML_CONTENT = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VESTASTACK // MK-1</title>
+    <title>VESTASTACK // ExArchon</title>
     <style>
         body { background: #121212; color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
@@ -47,9 +47,9 @@ HTML_CONTENT = """
         .founder { align-self: flex-end; background: #fff; color: #000; border-bottom-right-radius: 2px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); font-weight: 500; }
         .founder::after { content: 'Founder'; font-size: 10px; color: #888; position: absolute; top: -18px; right: 5px; text-transform: uppercase; font-weight: bold; }
 
-        /* KERNEL (MK-1) */
+        /* KERNEL (ExArchon) */
         .kernel { align-self: flex-start; background: #2d2d2d; color: #fff; border-bottom-left-radius: 2px; border: 1px solid #444; }
-        .kernel::after { content: 'Kernel (MK-1)'; font-size: 10px; color: #00ffcc; position: absolute; top: -18px; left: 5px; text-transform: uppercase; font-weight: bold; }
+        .kernel::after { content: 'Kernel (ExArchon)'; font-size: 10px; color: #00ffcc; position: absolute; top: -18px; left: 5px; text-transform: uppercase; font-weight: bold; }
 
         /* INPUT AREA */
         #input-area { padding: 25px 30px; background: #000; border-top: 2px solid #00ffcc33; display: flex; gap: 15px; }

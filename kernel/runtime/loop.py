@@ -59,7 +59,7 @@ class KernelRuntime:
                     task.description = task.description.replace(f"{{{{STEP_{step_num}_RESULT}}}}", step_outputs[step_num])
             # -------------------------
 
-            print(f"\n[MK-1 EXEC] Step {task.step_id}: {task.description[:100]}... [Tool: {task.tool}]")
+            print(f"\n[ExArchon EXEC] Step {task.step_id}: {task.description[:100]}... [Tool: {task.tool}]")
             
             try:
                 if task.tool == "web_search" and "web_search" in self.drivers:
@@ -94,12 +94,12 @@ class KernelRuntime:
             if self._is_error(task.result):
                 if current_recoveries >= self.max_recoveries:
                     # ЗАПОБІЖНИК СПРАЦЮВАВ! Зупиняємо конвеєр.
-                    print(f"\n[MK-1 REFLECTION] 🛑 CRITICAL: Maximum recovery attempts ({self.max_recoveries}) reached! Halting execution to prevent infinite loop.")
+                    print(f"\n[ExArchon REFLECTION] 🛑 CRITICAL: Maximum recovery attempts ({self.max_recoveries}) reached! Halting execution to prevent infinite loop.")
                     results_summary.append(f"\n[SYSTEM HALT] Execution aborted. Max retries exceeded.")
                     break # Виходимо з циклу
                     
                 current_recoveries += 1
-                print(f"\n[MK-1 REFLECTION] 🚨 Error detected in Step {task.step_id}! Initiating Recovery Plan (Attempt {current_recoveries}/{self.max_recoveries})...")
+                print(f"\n[ExArchon REFLECTION] 🚨 Error detected in Step {task.step_id}! Initiating Recovery Plan (Attempt {current_recoveries}/{self.max_recoveries})...")
                 
                 recovery_prompt = f"""
                 CRITICAL ALERT:
@@ -115,10 +115,10 @@ class KernelRuntime:
                 recovery_tasks = await self.planner.create_plan(recovery_prompt)
                 
                 if recovery_tasks:
-                    print(f"[MK-1 REFLECTION] 🛠️ Recovery Plan injected into queue.")
+                    print(f"[ExArchon REFLECTION] 🛠️ Recovery Plan injected into queue.")
                     tasks.extend(recovery_tasks)
                 else:
-                    print(f"[MK-1 REFLECTION] ⚠️ Failed to create Recovery Plan. Stopping execution.")
+                    print(f"[ExArchon REFLECTION] ⚠️ Failed to create Recovery Plan. Stopping execution.")
                     break
             # -----------------------------------------
 
