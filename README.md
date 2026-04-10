@@ -1,4 +1,7 @@
 # EXARCHON
+## Core Architecture
+
+> 📖 **Deep Dive:** For an in-depth technical breakdown of the system's cognitive framework and execution loop, please refer to the [Architecture Documentation](docs/architecture.md).
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-v0.5.1--alpha-blue">
@@ -7,9 +10,7 @@
 </p>
 
 ---
-## Core Architecture
 
-> 📖 **Deep Dive:** For an in-depth technical breakdown of the system's cognitive framework and execution loop, please refer to the [Architecture Documentation](docs/architecture.md).
 
 ## Vision
 
