@@ -1,8 +1,16 @@
 <div align="center">
-  <img src="docs/logo.png" alt="EXARCHON Logo" width="200">
-  <h1>EXARCHON</h1>
-</div>
+  <a href="https://github.com/Manikse/kernel">
+    <img src="docs/logo.png" alt="EXARCHON Logo" width="200">
+  </a>
 
+  <h1>EXARCHON</h1>
+
+  <p>
+    <b>The Headless Cognitive Operating System Layer for Autonomous AI Agents.</b><br>
+    Bridging probabilistic reasoning with deterministic execution.
+  </p>
+
+---
 ## Core Architecture
 
 > 📖 **Deep Dive:** For an in-depth technical breakdown of the system's cognitive framework and execution loop, please refer to the [Architecture Documentation](docs/architecture.md).
