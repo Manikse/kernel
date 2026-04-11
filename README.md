@@ -1,4 +1,8 @@
-# EXARCHON
+<div align="center">
+  <img src="docs/logo.png" alt="EXARCHON Logo" width="200">
+  <h1>EXARCHON</h1>
+</div>
+
 ## Core Architecture
 
 > 📖 **Deep Dive:** For an in-depth technical breakdown of the system's cognitive framework and execution loop, please refer to the [Architecture Documentation](docs/architecture.md).
