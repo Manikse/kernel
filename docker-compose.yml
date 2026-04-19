@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  exarchon-core:
+    build: .
+    container_name: exarchon_nexus
+    ports:
+      - "8000:8000"
+    env_file:
+      - core/.env
+    volumes:
+      - ./core/kernel_workspace:/app/kernel_workspace
+      - ./core/data:/app/data
+    restart: always

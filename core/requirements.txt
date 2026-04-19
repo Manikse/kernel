@@ -1,0 +1,10 @@
+openai
+python-dotenv
+rich
+duckduckgo-search
+aiohttp
+fastapi
+uvicorn
+google-genai
+pydantic
+requests
