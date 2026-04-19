@@ -8,7 +8,7 @@ from rich.panel import Panel
 os.environ["PYTHONIOENCODING"] = "utf-8"
 os.environ["PYTHONUTF8"] = "1"
 
-API_URL = "http://127.0.0.1:8000/execute"
+API_URL = "https://kernel-production-202c.up.railway.app/execute"
 console = Console()
 
 def print_header():
