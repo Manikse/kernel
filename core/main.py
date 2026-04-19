@@ -107,17 +107,20 @@ async def lifespan(app: FastAPI):
     global global_kernel
     
     print("🛰️ Initializing ExArchon Core Systems...")
-    load_dotenv()
     
-    # ТЕПЕР ШУКАЄМО КЛЮЧ GOOGLE
-    GOOGLE_KEY = os.getenv("GOOGLE_API_KEY")
+    # Спробуємо завантажити .env, якщо він є (локально)
+    load_dotenv() 
+    
+    # Пряма спроба отримати змінну з оточення (для Railway/Docker)
+    GOOGLE_KEY = os.environ.get("GOOGLE_API_KEY")
     
     acl = ACLController()
-    if GOOGLE_KEY:
+    if GOOGLE_KEY and len(GOOGLE_KEY) > 10: # Перевірка, що ключ не порожній
         acl.register_provider("real_ai", GoogleProvider(api_key=GOOGLE_KEY))
-        print("[SYSTEM] ACL Layer: ONLINE (Google Gemini API)")
+        print(f"[SYSTEM] ACL Layer: ONLINE (Google Gemini API)")
     else:
-        print("[SYSTEM] ACL Layer: OFFLINE (Missing GOOGLE_API_KEY in .env)")
+        # Це повідомлення ми побачимо в логах Railway, якщо ключ знову не підхопиться
+        print("[SYSTEM] ACL Layer: OFFLINE. CRITICAL: GOOGLE_API_KEY not detected in environment!")
         
     memory = UNMSController()
     
@@ -132,9 +135,7 @@ async def lifespan(app: FastAPI):
     })
     
     print("[SYSTEM] Drivers active: Terminal, WebSearch, FileSystem")
-    
     daemon_task = asyncio.create_task(daemon_worker())
-    
     print("🚀 EXARCHON Nexus API is ready and listening!")
     
     yield 
