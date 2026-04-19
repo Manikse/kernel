@@ -108,19 +108,27 @@ async def lifespan(app: FastAPI):
     
     print("🛰️ Initializing ExArchon Core Systems...")
     
-    # Спробуємо завантажити .env, якщо він є (локально)
-    load_dotenv() 
+    # 1. Завантажуємо локальний .env обережно (якщо він є)
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except Exception:
+        pass
     
-    # Пряма спроба отримати змінну з оточення (для Railway/Docker)
+    # 2. Жорстко тягнемо ключ і чистимо його від прихованих лапок/пробілів
     GOOGLE_KEY = os.environ.get("GOOGLE_API_KEY")
-    
+    if GOOGLE_KEY:
+        GOOGLE_KEY = GOOGLE_KEY.strip(' "\'') # Зрізаємо сміття по краях
+        
     acl = ACLController()
-    if GOOGLE_KEY and len(GOOGLE_KEY) > 10: # Перевірка, що ключ не порожній
+    
+    # 3. Детальний дебаг у логи Railway
+    if GOOGLE_KEY and len(GOOGLE_KEY) > 10:
         acl.register_provider("real_ai", GoogleProvider(api_key=GOOGLE_KEY))
-        print(f"[SYSTEM] ACL Layer: ONLINE (Google Gemini API)")
+        print(f"[SYSTEM] ACL Layer: ONLINE (Key found! Length: {len(GOOGLE_KEY)})")
     else:
-        # Це повідомлення ми побачимо в логах Railway, якщо ключ знову не підхопиться
-        print("[SYSTEM] ACL Layer: OFFLINE. CRITICAL: GOOGLE_API_KEY not detected in environment!")
+        print(f"[SYSTEM] ACL Layer: OFFLINE. CRITICAL ERROR!")
+        print(f"[DEBUG] Raw variable value seen by Python: '{GOOGLE_KEY}'")
         
     memory = UNMSController()
     
@@ -142,7 +150,6 @@ async def lifespan(app: FastAPI):
     
     print("🛑 Shutting down ExArchon Core...")
     daemon_task.cancel()
-
 
 # --- API SETUP ---
 app = FastAPI(
