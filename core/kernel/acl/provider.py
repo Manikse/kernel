@@ -29,16 +29,42 @@ class RealAIProvider(LLMProvider):
             return f"Kernel Error: {str(e)}"
 
 class ACLController:
+    """
+    Абстрактний Когнітивний Шар.
+    Маршрутизує запити між Хмарою та Локальним краєм (Edge).
+    """
     def __init__(self):
         self.providers = {}
-        self.default_provider = "real_ai"
+        self.primary = None
+        self.backup = None
 
-    def register_provider(self, name: str, provider: LLMProvider):
+    def register_provider(self, name: str, provider, is_primary=False):
         self.providers[name] = provider
+        if is_primary:
+            self.primary = name
+        elif not self.backup:
+            self.backup = name
 
-    async def execute(self, prompt: str, provider_name: str = None, system_prompt: str = "") -> str:
-        target = provider_name or self.default_provider
-        if target not in self.providers:
-            return "Error: No provider registered."
-        # Передаємо system_prompt далі в генератор
-        return await self.providers[target].generate(prompt, system_prompt=system_prompt)
+    async def execute(self, prompt: str, system_prompt: str = "") -> str:
+        # 1. CLOUD STRATEGY (Gemini)
+        if self.primary:
+            provider = self.providers[self.primary]
+            print(f"\n[ACL] 🛰️ Зв'язок із хмарою: {self.primary}...")
+            
+            result = await provider.generate(prompt, system_prompt)
+            
+            # Перевірка на успіх
+            if "FAILED" not in result:
+                return result
+            
+            print(f"[ACL] ⚠️ Хмара недоступна. Автономне перемикання...")
+
+        # 2. EDGE STRATEGY (Ollama)
+        if self.backup:
+            provider = self.providers[self.backup]
+            print(f"[ACL] 🏠 Робота через локальне ядро: {self.backup}...")
+            
+            result = await provider.generate(prompt, system_prompt)
+            return result
+
+        return "CRITICAL ERROR: Всі когнітивні центри офлайн."
