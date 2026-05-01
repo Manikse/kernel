@@ -115,7 +115,7 @@ The Terminal Driver executes native commands on your host machine. While operati
 
 ## Author & Support
 
-Created by **Manikse** — Building the distributed infrastructure of the future.
+Created by **Manikse** — Building the distributed infrastructure of the future
 
 <div align="center"> 
   <a href="https://ko-fi.com/manikse"> 
