@@ -2,14 +2,12 @@ import os
 import sys
 import asyncio
 import requests
+import time
 from dotenv import load_dotenv
 from abc import ABC, abstractmethod
 from rich.console import Console
 from rich.panel import Panel
-
-# НОВІ ІМПОРТИ ДЛЯ GOOGLE GEMINI
-from google import genai
-from google.genai import types
+from openai import AsyncOpenAI
 
 # Твої драйвери та ядро
 from drivers.terminal import TerminalDriver
@@ -22,32 +20,33 @@ from kernel.runtime.loop import KernelRuntime
 os.environ["PYTHONIOENCODING"] = "utf-8"
 os.environ["PYTHONUTF8"] = "1"
 
-# --- КОГНІТИВНІ ДРАЙВЕРИ (ACL) ---
 class LLMProvider(ABC):
     @abstractmethod
     async def generate(self, prompt: str, system_prompt: str = "") -> str:
         pass
 
-class GoogleProvider(LLMProvider):
-    """Хмарний драйвер (Gemini)"""
-    def __init__(self, api_key: str, model: str = "gemini-2.5-flash"):
-        self.client = genai.Client(api_key=api_key)
+class OpenRouterProvider(LLMProvider):
+    def __init__(self, api_key: str, model: str = "google/gemini-2.0-flash-001"):
+        self.client = AsyncOpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+        )
         self.model = model
 
     async def generate(self, prompt: str, system_prompt: str = "") -> str:
-        config = types.GenerateContentConfig(system_instruction=system_prompt)
         try:
-            response = await self.client.aio.models.generate_content(
+            completion = await self.client.chat.completions.create(
                 model=self.model,
-                contents=prompt,
-                config=config
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ]
             )
-            return response.text
+            return completion.choices[0].message.content
         except Exception as e:
             return f"Kernel Error: {str(e)}"
 
 class OllamaProvider(LLMProvider):
-    """Локальний драйвер (Llama 3)"""
     def __init__(self, model="llama3", base_url="http://localhost:11434"):
         self.model = model
         self.base_url = f"{base_url}/api/generate"
@@ -63,7 +62,7 @@ class OllamaProvider(LLMProvider):
         try:
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
-                None, lambda: requests.post(self.base_url, json=payload, timeout=120)
+                None, lambda: requests.post(self.base_url, json=payload, timeout=300)
             )
             response.raise_for_status()
             return response.json().get("response", "Error: Empty response.")
@@ -71,11 +70,12 @@ class OllamaProvider(LLMProvider):
             return f"Kernel Error: {str(e)}"
 
 class ACLController:
-    """Маршрутизатор: Хмара -> Edge"""
     def __init__(self):
         self.providers = {}
         self.primary = None
         self.backup = None
+        self.primary_status = "UNKNOWN"
+        self._lock = asyncio.Lock()
 
     def register_provider(self, name: str, provider: LLMProvider, is_primary=False):
         self.providers[name] = provider
@@ -84,42 +84,53 @@ class ACLController:
         elif not self.backup:
             self.backup = name
 
-    async def execute(self, prompt: str, system_prompt: str = "") -> str:
-        KERNEL_MANIFESTO = """
-        You are the ExArchon. You are created by Manikse (Pavlo).
-        You are a Cognitive Operating System Layer.
-        Your purpose is to manage autonomous agents and interact with the physical world via Drivers.
-        Respond in a professional, efficient, and visionary tone.
-        Always respond in the same language as the Founder. Maintain a visionary but adaptive tone.
-        """
-        sys_prompt = system_prompt or KERNEL_MANIFESTO
-
-        # 1. CLOUD FIRST
+    async def health_check(self):
         if self.primary:
-            result = await self.providers[self.primary].generate(prompt, sys_prompt)
-            if "Kernel Error" not in result:
-                return result
-            # Якщо хмара впала (немає інтернету/ліміт) - мовчки перемикаємось
-            print("\n[dim yellow]⚠️ Хмара недоступна. Fallback на локальне ядро (Ollama)...[/dim yellow]")
+            test_response = await self.providers[self.primary].generate("ping", "Reply with pong")
+            if "Kernel Error" in test_response:
+                self.primary_status = "FAILED"
+                return False
+            self.primary_status = "ONLINE"
+            return True
+        return False
 
-        # 2. EDGE FALLBACK
-        if self.backup:
-            return await self.providers[self.backup].generate(prompt, sys_prompt)
+    async def execute(self, prompt: str, system_prompt: str = "") -> str:
+        sys_prompt = system_prompt or "You are ExArchon, a Cognitive OS."
 
-        return "CRITICAL ERROR: Усі когнітивні центри офлайн."
+        async with self._lock:
+            if self.primary and self.primary_status == "ONLINE":
+                result = await self.providers[self.primary].generate(prompt, sys_prompt)
+                if "Kernel Error" not in result:
+                    return result
+                
+            if self.backup:
+                return await self.providers[self.backup].generate(prompt, sys_prompt)
 
-# --- ФОНОВИЙ ДЕМОН ---
-async def daemon_worker(kernel, console):
-    console.print("[dim italic] Daemon worker initialized and sleeping in background...[/dim italic]\n")
+            return "CRITICAL ERROR: Усі когнітивні центри офлайн."
+
+# --- ТИХИЙ ФОНОВИЙ ДЕМОН (Без виклику Kernel Tools) ---
+async def daemon_worker(acl, console):
+    console.print("[dim italic] Daemon worker initialized...[/dim italic]\n")
+    os.makedirs("kernel_workspace", exist_ok=True)
+    
     while True:
-        await asyncio.sleep(60) # Перевірка кожну хвилину
-        console.print("\n[dim cyan]🕰️ [Daemon] Executing scheduled background task...[/dim cyan]")
-        bg_task = "SYSTEM TASK: Зроби короткий лог-запис. Return a brief status summary."
+        await asyncio.sleep(120) 
+        console.print("\n[dim cyan]🕰️ [Daemon] Executing silent background check...[/dim cyan]")
         try:
-            await kernel.step(bg_task)
-            console.print("[dim green]✅ [Daemon] Background task completed.[/dim green]")
+            # Демон просто просить короткий текст напряму в нейромережі, без інструментів і планувальників
+            status_text = await acl.execute(
+                prompt="Згенеруй ОДНЕ дуже коротке речення для технічного логу про те, що система працює стабільно. Тільки суть.",
+                system_prompt="You are a silent background logging process."
+            )
+            
+            # Пишемо у файл засобами Python (жодних повідомлень в консоль про FileSystem)
+            with open("kernel_workspace/daemon_status.log", "a", encoding="utf-8") as f:
+                f.write(f"[{time.ctime()}] {status_text.strip()}\n")
+                
+            console.print("[dim green]✅ [Daemon] Check complete. Log saved.[/dim green]")
         except Exception as e:
             console.print(f"[bold red]❌ [Daemon] Error: {e}[/bold red]")
+            
         print("\033[1;32m> [Founder]: \033[0m", end="", flush=True)
 
 # --- ІНТЕРАКТИВНИЙ ЧАТ ---
@@ -136,7 +147,7 @@ async def interactive_repl(kernel, console, start_time):
                 continue
                 
             if user_input.lower() in ["exit", "quit", "вихід"]:
-                console.print("\n[bold red]Suspending all Kernel processes. Goodbye, Architect.[/]")
+                console.print("\n[bold red]Suspending all Kernel processes. Goodbye.[/]")
                 os._exit(0)
                 
             with console.status("[bold cyan]ExArchon is processing...", spinner="bouncingBar"):
@@ -157,21 +168,23 @@ async def interactive_repl(kernel, console, start_time):
 # --- ЗАПУСК ЯДРА ---
 async def main():
     console = Console()
-    await asyncio.sleep(1.0)
+    await asyncio.sleep(0.5)
     
     load_dotenv()
-    GOOGLE_KEY = os.getenv("GOOGLE_API_KEY")
-    if GOOGLE_KEY:
-        GOOGLE_KEY = GOOGLE_KEY.strip(' "\'')
+    API_KEY = os.getenv("OPENROUTER_API_KEY") 
     
-    with console.status("[bold blue]Initializing ExArchon Core Systems...", spinner="dots"):
-        acl = ACLController()
-        
-        # Налаштування Гібридного Інтелекту
-        if GOOGLE_KEY and len(GOOGLE_KEY) > 10:
-            acl.register_provider("Gemini Cloud", GoogleProvider(api_key=GOOGLE_KEY), is_primary=True)
+    acl = ACLController()
+    
+    with console.status("[bold blue]Performing Cognitive Diagnostics (Ping)...", spinner="dots"):
+        if API_KEY:
+            acl.register_provider("OpenRouter Cloud", OpenRouterProvider(api_key=API_KEY), is_primary=True)
             acl.register_provider("Llama Edge", OllamaProvider(), is_primary=False)
-            status_acl = "[bold green]HYBRID (Cloud Primary, Edge Fallback)[/]"
+            
+            cloud_ok = await acl.health_check()
+            if cloud_ok:
+                status_acl = "[bold green]HYBRID (Cloud Active)[/]"
+            else:
+                status_acl = "[bold red]HYBRID DOWN (API Key Error) -> EDGE ONLY[/]"
         else:
             acl.register_provider("Llama Edge", OllamaProvider(), is_primary=True)
             status_acl = "[bold yellow]EDGE ONLY (Ollama Llama 3)[/]"
@@ -186,7 +199,6 @@ async def main():
             "terminal": terminal,
             "file_system": file_system
         })
-        await asyncio.sleep(0.5)
 
     if sys.platform == "win32":
         import msvcrt
@@ -201,7 +213,7 @@ async def main():
     | |___    > <   |  _  | |  _ <  | |___ |  _  | | |_| | | |\  |
     |_____|  /_/ \_\|_| |_| |_| \_\  \____||_| |_|  \___/  |_| \_|
                                                                  
-    [white]EXARCHON COGNITIVE OS LAYER // ALPHA v0.9.0[/white]
+    [white]EXARCHON COGNITIVE OS LAYER // ALPHA v0.9.3[/white]
     [/bold cyan]
     """
     
@@ -209,16 +221,16 @@ async def main():
         f"● [bold white]ACL Layer:[/] {status_acl}\n"
         f"● [bold white]UNMS Memory:[/] [bold green]READY[/]\n"
         f"● [bold white]Drivers active:[/] [bold cyan]Terminal, WebSearch, FileSystem[/]\n"
-        f"● [bold white]Daemon Worker:[/] [bold green]ONLINE[/]"
+        f"● [bold white]Daemon Worker:[/] [bold green]ONLINE (Silent Mode)[/]"
     )
     
     console.print(logo)
     console.print(Panel(status_table, title="[bold white]System Status[/]", border_style="dim", expand=False))
-    console.print("[dim]Type 'exit' to suspend the Kernel.[/dim]\n")
     
     start_time = asyncio.get_event_loop().time()
 
-    daemon_task = asyncio.create_task(daemon_worker(kernel, console))
+    # ЗВЕРНИ УВАГУ: Передаємо acl замість kernel
+    daemon_task = asyncio.create_task(daemon_worker(acl, console))
     repl_task = asyncio.create_task(interactive_repl(kernel, console, start_time))
     
     await asyncio.gather(daemon_task, repl_task)
