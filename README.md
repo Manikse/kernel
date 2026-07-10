@@ -14,7 +14,8 @@
 ---
 ## Core Architecture
 
-> 📖 **Deep Dive:** For an in-depth technical breakdown of the system's cognitive framework and execution loop, please refer to the [Architecture Documentation](docs/architecture.md).
+> 📖 **Deep Dive:** For an in-depth technical breakdown of the system's cognitive framework and execution loop, please refer to the [Architecture Documentation](docs/architecture.md)
+ 📖 **Theoretical Foundation:** A comprehensive technical paper detailing the mathematical models, spatial processing logic, and deterministic constraints of the Exarchon architecture is currently in progress (Link to preprint coming soon)
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-v0.9.0--beta-blue">
