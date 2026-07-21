@@ -39,17 +39,17 @@ EXARCHON is built upon a distributed architecture designed for maximum survivabi
 
 ### 1. Dual-Strategy ACL (Agent Control Layer)
 The cognitive routing engine of the system. It handles high-level reasoning and intelligently routes logic based on network conditions:
-* **Cloud Nexus Strategy:** Routes complex tasks to high-performance cloud models (Google Gemini, Groq) for maximum intelligence.
-* **Edge Node Strategy:** Automatically detects network latency or rate limits (e.g., 429 Error) and falls back to a locally hosted LLM (Ollama) for uninterrupted, offline execution.
+* **Cloud Nexus Strategy:** Routes complex tasks to high-performance cloud models (Google Gemini, Groq) for maximum intelligence
+* **Edge Node Strategy:** Automatically detects network latency or rate limits (e.g., 429 Error) and falls back to a locally hosted LLM (Ollama) for uninterrupted, offline execution
 
 ### 2. UNMS (Unified Neural Memory System)
-The persistent state management system. EXARCHON retains context, learned data, and project objectives across execution cycles using a unified storage layer, supporting multi-tenant isolation for SaaS integrations.
+The persistent state management system. EXARCHON retains context, learned data, and project objectives across execution cycles using a unified storage layer, supporting multi-tenant isolation for SaaS integrations
 
 ### 3. A2E Drivers (Agent-to-Environment)
-The execution interfaces allowing the Kernel to interact with the host environment. Protected by the **Shadow Protocol**, EXARCHON can analyze your file system securely without destructive overrides.
-* **WebSearch Driver:** Real-time data retrieval.
-* **Terminal Driver:** Execution of native OS commands (PowerShell/Bash/Linux).
-* **FileSystem Driver:** Autonomous file management with Diff/Patch proposal mechanics.
+The execution interfaces allowing the Kernel to interact with the host environment. Protected by the **Shadow Protocol**, EXARCHON can analyze your file system securely without destructive overrides
+* **WebSearch Driver:** Real-time data retrieval
+* **Terminal Driver:** Execution of native OS commands (PowerShell/Bash/Linux)
+* **FileSystem Driver:** Autonomous file management with Diff/Patch proposal mechanics
 
 ---
 
